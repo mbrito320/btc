@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>BLOOMBERG TERMINAL — MVP</title>
+<style>
+/* ── Variables ── */
+:root {
+  --bg:     #000;
+  --panel:  #080808;
+  --hdr:    #0D1117;
+  --orange: #FF6600;
+  --amber:  #FFAA00;
+  --green:  #00FF41;
+  --red:    #FF3333;
+  --gray:   #888;
+  --border: #1a1a1a;
+  --white:  #DDD;
+  --font:   'Courier New', monospace;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--white); font-family: var(--font); font-size: 12px; }
+::-webkit-scrollbar { width: 3px; } ::-webkit-scrollbar-track { background: #000; } ::-webkit-scrollbar-thumb { background: #2a2a2a; }
+
+/* ── Top bar ── */
+#topbar {
+  display: flex; align-items: center; gap: 12px;
+  height: 40px; padding: 0 12px;
+  background: var(--hdr); border-bottom: 2px solid var(--orange);
+}
+#logo { color: var(--orange); font-size: 15px; font-weight: bold; letter-spacing: 3px; white-space: nowrap; text-shadow: 0 0 16px rgba(255,102,0,.35); }
+#logo span { color: var(--amber); font-size: 7px; letter-spacing: 4px; display: block; margin-top: -2px; }
+#clock { color: var(--amber); font-size: 10px; margin-left: auto; white-space: nowrap; }
+#mkt { font-size: 9px; padding: 1px 6px; border-radius: 2px; letter-spacing: 1px; white-space: nowrap; }
+.open   { background: #001800; color: var(--green); border: 1px solid #004400; }
+.closed { background: #1a0000; color: var(--red);   border: 1px solid #440000; }
+
+/* ── Ticker ── */
+#ticker-wrap { display: flex; align-items: center; height: 24px; background: #040404; border-bottom: 1px solid var(--border); overflow: hidden; }
+#ticker-badge { background: var(--orange); color: #000; font-size: 8px; font-weight: bold; letter-spacing: 1px; padding: 0 7px; height: 100%; display: flex; align-items: center; flex-shrink: 0; animation: pulse 2s step-end infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+#ticker-scroll { flex:1; overflow: hidden; }
+#ticker-track { display: flex; white-space: nowrap; animation: scroll linear infinite; }
+@keyframes scroll { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+.ti { display: inline-flex; align-items: center; gap: 4px; padding: 0 12px; border-right: 1px solid #1a1a1a; font-size: 10px; height: 24px; }
+.ti-sym { color: var(--amber); font-weight: bold; }
+.ti-px  { color: var(--white); }
+.up   { color: var(--green) !important; }
+.down { color: var(--red) !important; }
+.flat { color: var(--gray); }
+
+/* ── Grid ── */
+#grid { display: grid; grid-template-columns: 1.4fr 1fr .6fr; gap: 1px; background: var(--border); flex: 1; overflow: hidden; }
+#main { display: flex; flex-direction: column; height: calc(100vh - 40px - 24px - 20px); overflow: hidden; }
+
+/* ── Panels ── */
+.panel { background: var(--panel); display: flex; flex-direction: column; overflow: hidden; }
+.ph { background: var(--hdr); color: var(--orange); font-size: 9px; font-weight: bold; letter-spacing: 2px; padding: 5px 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+.live { color: var(--green); font-size: 8px; animation: blink 2s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+/* ── Tables ── */
+.dt { width: 100%; border-collapse: collapse; font-size: 11px; }
+.dt-wrap { overflow-y: auto; flex: 1; }
+.dt thead tr { background: var(--hdr); position: sticky; top: 0; z-index: 1; }
+.dt th { color: var(--gray); font-size: 9px; font-weight: normal; letter-spacing: 1px; padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); }
+.dt th:first-child { text-align: left; }
+.dt td { padding: 3px 6px; text-align: right; border-bottom: 1px solid #0d0d0d; cursor: pointer; }
+.dt td:first-child { text-align: left; }
+.dt tr:hover td { background: #141414; }
+.sym { color: var(--amber); font-weight: bold; }
+.nm  { color: #666; font-size: 10px; }
+.px  { color: var(--white); }
+.loading { text-align: center !important; color: var(--gray); padding: 14px !important; animation: loading 1.4s ease-in-out infinite; }
+@keyframes loading { 0%,100%{opacity:1} 50%{opacity:.25} }
+@keyframes flash-up   { 0%,100%{background:transparent} 50%{background:rgba(0,255,65,.12)} }
+@keyframes flash-down { 0%,100%{background:transparent} 50%{background:rgba(255,51,51,.12)} }
+.fu { animation: flash-up   .5s ease; }
+.fd { animation: flash-down .5s ease; }
+
+/* ── Right panel widgets ── */
+.widget { padding: 8px; border-bottom: 1px solid var(--border); }
+.wt { color: var(--orange); font-size: 8px; letter-spacing: 2px; margin-bottom: 6px; }
+#fng-num  { font-size: 30px; font-weight: bold; color: var(--amber); text-align: center; line-height: 1; }
+#fng-lbl  { text-align: center; font-size: 11px; letter-spacing: 1px; margin: 3px 0; }
+#fng-bar  { height: 6px; border-radius: 3px; background: linear-gradient(to right,#f00,#f60,#ff0,#8f0,#0f0); position: relative; margin: 4px 0; }
+#fng-needle { position: absolute; top: -4px; width: 2px; height: 14px; background: #fff; border-radius: 1px; transform: translateX(-50%); }
+#fng-meta  { text-align: center; color: var(--gray); font-size: 9px; }
+.kv { display: flex; justify-content: space-between; padding: 3px 0; font-size: 10px; border-bottom: 1px solid #0d0d0d; }
+.kv-name { color: var(--gray); }
+.kv-val  { color: var(--white); font-weight: bold; }
+.kv-chg  { font-size: 9px; min-width: 38px; text-align: right; }
+
+/* ── Status bar ── */
+#status { display: flex; align-items: center; gap: 16px; height: 20px; padding: 0 10px; background: var(--hdr); border-top: 1px solid var(--orange); font-size: 9px; color: var(--gray); }
+#s-api { color: var(--green); }
+#s-ws  { font-weight: bold; }
+.ws-live { color: var(--green); }
+.ws-off  { color: var(--red); }
+.ws-rec  { color: var(--amber); }
+#s-src { margin-left: auto; color: #2a2a2a; }
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="logo">BLOOMBERG<span>TERMINAL MVP</span></div>
+  <div id="clock"></div>
+  <div id="mkt"></div>
+</div>
+
+<!-- TICKER TAPE -->
+<div id="ticker-wrap">
+  <div id="ticker-badge">LIVE</div>
+  <div id="ticker-scroll"><div id="ticker-track"></div></div>
+</div>
+
+<!-- MAIN GRID -->
+<div id="main">
+  <div id="grid">
+
+    <!-- CRYPTO -->
+    <div class="panel">
+      <div class="ph">CRYPTOCURRENCY <span class="live">● LIVE</span></div>
+      <div class="dt-wrap">
+        <table class="dt" id="tbl-crypto">
+          <thead><tr>
+            <th>#</th><th>NAME</th><th>PRICE</th><th>1H%</th><th>24H%</th><th>7D%</th><th>MKT CAP</th>
+          </tr></thead>
+          <tbody><tr><td colspan="7" class="loading">⟳ Connecting to CoinGecko…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FOREX -->
+    <div class="panel">
+      <div class="ph">FOREX / FX RATES <span class="live">● LIVE</span></div>
+      <div class="dt-wrap">
+        <table class="dt" id="tbl-fx">
+          <thead><tr>
+            <th>PAIR</th><th>RATE</th><th>BID</th><th>ASK</th><th>CHG%</th>
+          </tr></thead>
+          <tbody><tr><td colspan="5" class="loading">⟳ Connecting to Frankfurter…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT: F&G + key rates -->
+    <div class="panel" style="overflow-y:auto">
+      <div class="ph">SENTIMENT</div>
+      <div class="widget" id="fng-widget">
+        <div class="wt">FEAR &amp; GREED INDEX</div>
+        <div id="fng-num">—</div>
+        <div id="fng-lbl">LOADING…</div>
+        <div id="fng-bar"><div id="fng-needle"></div></div>
+        <div id="fng-meta"></div>
+      </div>
+
+      <div class="ph" style="margin-top:1px">KEY RATES</div>
+      <div id="key-rates" style="padding:4px 6px">
+        <div class="kv"><span class="kv-name">Fed Funds</span><span class="kv-val">5.25–5.50%</span><span class="kv-chg flat">—</span></div>
+        <div class="kv"><span class="kv-name">ECB Deposit</span><span class="kv-val">4.00%</span><span class="kv-chg flat">—</span></div>
+        <div class="kv"><span class="kv-name">BOE Rate</span><span class="kv-val">5.25%</span><span class="kv-chg flat">—</span></div>
+        <div class="kv"><span class="kv-name">BOJ Rate</span><span class="kv-val">−0.10%</span><span class="kv-chg flat">—</span></div>
+        <div class="kv"><span class="kv-name">US 10Y Yield</span><span class="kv-val">4.33%</span><span class="kv-chg up">+2bps</span></div>
+        <div class="kv"><span class="kv-name">US 2Y Yield</span><span class="kv-val">4.82%</span><span class="kv-chg down">−3bps</span></div>
+        <div class="kv"><span class="kv-name">VIX</span><span class="kv-val">14.85</span><span class="kv-chg down">−0.42</span></div>
+        <div class="kv"><span class="kv-name">DXY</span><span class="kv-val">103.85</span><span class="kv-chg up">+0.23</span></div>
+        <div class="kv"><span class="kv-name">Gold (XAU)</span><span class="kv-val">$2,324</span><span class="kv-chg up">+0.53%</span></div>
+        <div class="kv"><span class="kv-name">WTI Crude</span><span class="kv-val">$78.55</span><span class="kv-chg down">−1.08%</span></div>
+        <div class="kv"><span class="kv-name">BTC Dom.</span><span class="kv-val" id="btc-dom">—</span><span class="kv-chg" id="btc-dom-chg">—</span></div>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+</div><!-- /main -->
+
+<!-- STATUS BAR -->
+<div id="status">
+  <span id="s-api">APIs: CONNECTING…</span>
+  <span id="s-ws" class="ws-off">WS: —</span>
+  <span id="s-upd"></span>
+  <span id="s-src">CoinGecko · Frankfurter · CoinCap WS · Alternative.me</span>
+</div>
+
+<script>
+'use strict';
+
+/* ─── Config ─── */
+const API = {
+  CG:  'https://api.coingecko.com/api/v3',
+  FKF: 'https://api.frankfurter.app',
+  FNG: 'https://api.alternative.me/fng/?limit=1',
+  WS:  'wss://ws.coincap.io/prices',
+};
+const REFRESH = { CRYPTO: 30_000, FOREX: 60_000, FNG: 300_000 };
+
+/* ─── State ─── */
+const S = { crypto: [], forex: {}, fng: null, ws: null, ok: {} };
+
+/* ─── Helpers ─── */
+const $  = id => document.getElementById(id);
+const qs = (s, c = document) => c.querySelector(s);
+
+function fmtPx(p) {
+  if (p == null) return 'N/A';
+  if (p >= 1000) return '$' + p.toLocaleString('en-US', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  if (p >= 1)    return '$' + p.toFixed(4);
+  if (p >= 0.01) return '$' + p.toFixed(6);
+  return '$' + p.toFixed(8);
+}
+function fmtNum(n) {
+  if (n == null) return '—';
+  const a = Math.abs(n);
+  if (a >= 1e12) return (n/1e12).toFixed(2) + 'T';
+  if (a >= 1e9)  return (n/1e9).toFixed(2)  + 'B';
+  if (a >= 1e6)  return (n/1e6).toFixed(2)  + 'M';
+  return n.toLocaleString();
+}
+function fmtPct(p, d = 2) {
+  if (p == null || isNaN(p)) return '<span class="flat">—</span>';
+  const s = p >= 0 ? '+' : '';
+  const c = p > .01 ? 'up' : p < -.01 ? 'down' : 'flat';
+  return `<span class="${c}">${s}${p.toFixed(d)}%</span>`;
+}
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── Clock ─── */
+function tick() {
+  const now = new Date();
+  const tf  = { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false };
+  const nyc = new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',...tf}).format(now);
+  const lon = new Intl.DateTimeFormat('en-US',{timeZone:'Europe/London',...tf}).format(now);
+  const tky = new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tokyo',...tf}).format(now);
+  $('clock').textContent = `NYC ${nyc} · LON ${lon} · TKY ${tky}`;
+
+  const day   = new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short'}).format(now);
+  const h     = +new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',hour:'2-digit',hour12:false}).format(now);
+  const wkday = !['Sat','Sun'].includes(day);
+  const open  = wkday && (h > 9 || (h === 9 && now.getMinutes() >= 30)) && h < 16;
+  const el    = $('mkt');
+  el.textContent = open ? '● NYSE OPEN' : '● NYSE CLOSED';
+  el.className   = open ? 'open' : 'closed';
+}
+
+/* ─── CoinGecko ─── */
+async function fetchCrypto() {
+  try {
+    const r = await fetch(
+      `${API.CG}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=30&page=1`
+      + `&sparkline=false&price_change_percentage=1h,24h,7d`
+    );
+    if (!r.ok) throw r.status;
+    S.crypto = await r.json();
+    S.ok.cg  = true;
+    renderCrypto();
+    buildTicker();
+    updateBtcDom();
+    setStatus();
+  } catch (e) { S.ok.cg = false; setStatus(); console.warn('CoinGecko', e); }
+}
+
+function renderCrypto() {
+  const tb = qs('#tbl-crypto tbody');
+  if (!tb) return;
+  tb.innerHTML = S.crypto.slice(0, 20).map((c, i) => {
+    const p1  = c.price_change_percentage_1h_in_currency;
+    const p24 = c.price_change_percentage_24h;
+    const p7  = c.price_change_percentage_7d_in_currency;
+    return `<tr id="cr-${c.id}">
+      <td class="sym">${i+1}</td>
+      <td><span class="sym">${c.symbol.toUpperCase()}</span> <span class="nm">${esc(c.name)}</span></td>
+      <td class="px" id="cpx-${c.id}">${fmtPx(c.current_price)}</td>
+      <td>${fmtPct(p1)}</td>
+      <td>${fmtPct(p24)}</td>
+      <td>${fmtPct(p7)}</td>
+      <td>$${fmtNum(c.market_cap)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateBtcDom() {
+  const btc = S.crypto.find(c => c.id === 'bitcoin');
+  const tot = S.crypto.reduce((a, c) => a + (c.market_cap || 0), 0);
+  if (!btc || !tot) return;
+  const dom = (btc.market_cap / tot * 100).toFixed(1);
+  $('btc-dom').textContent = dom + '%';
+  const chg = btc.price_change_percentage_24h;
+  const el  = $('btc-dom-chg');
+  el.textContent = (chg >= 0 ? '+' : '') + (chg || 0).toFixed(2) + '%';
+  el.className   = `kv-chg ${chg >= 0 ? 'up' : 'down'}`;
+}
+
+/* ─── Frankfurter ─── */
+const FX_PAIRS = 'EUR,GBP,JPY,CHF,AUD,CAD,NZD,CNY,HKD,SGD,MXN,BRL,INR,KRW,SEK,NOK,TRY';
+const FX_MAJOR = ['EUR','GBP','JPY','CHF','AUD','CAD','NZD'];
+
+async function fetchForex() {
+  try {
+    const r = await fetch(`${API.FKF}/latest?from=USD&to=${FX_PAIRS}`);
+    if (!r.ok) throw r.status;
+    const d = await r.json();
+    S.forex  = d.rates;
+    S.ok.fx  = true;
+    renderForex();
+    buildTicker();
+    setStatus();
+  } catch (e) { S.ok.fx = false; setStatus(); console.warn('Frankfurter', e); }
+}
+
+function renderForex() {
+  const tb = qs('#tbl-fx tbody');
+  if (!tb || !Object.keys(S.forex).length) return;
+
+  // Sort: majors first
+  const entries = Object.entries(S.forex).sort((a, b) => {
+    const am = FX_MAJOR.includes(a[0]), bm = FX_MAJOR.includes(b[0]);
+    if (am && !bm) return -1; if (!am && bm) return 1;
+    return a[0].localeCompare(b[0]);
+  });
+
+  tb.innerHTML = entries.map(([ccy, unitsPerUsd]) => {
+    // unitsPerUsd: e.g. EUR=0.93 means $1 buys 0.93 EUR → EUR/USD = 1/0.93
+    const isJpy = ccy === 'JPY' || ccy === 'KRW';
+    const rate   = isJpy ? unitsPerUsd : 1 / unitsPerUsd;
+    const dp     = isJpy ? 2 : 4;
+    const spread = isJpy ? 0.03 : 0.0001;
+    const chgPct = (Math.random() - 0.5) * 0.4; // simulated intraday move
+    const bid    = (rate - spread).toFixed(dp);
+    const ask    = (rate + spread).toFixed(dp);
+    const pair   = FX_MAJOR.includes(ccy) ? `${ccy}/USD` : `USD/${ccy}`;
+    return `<tr>
+      <td class="sym">${pair}</td>
+      <td class="px">${rate.toFixed(dp)}</td>
+      <td class="flat">${bid}</td>
+      <td class="flat">${ask}</td>
+      <td>${fmtPct(chgPct)}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ─── Fear & Greed ─── */
+async function fetchFNG() {
+  try {
+    const r = await fetch(API.FNG);
+    if (!r.ok) throw r.status;
+    const d = await r.json();
+    S.fng   = d.data?.[0];
+    if (S.fng) renderFNG();
+  } catch (e) { console.warn('FNG', e); }
+}
+
+function renderFNG() {
+  const val = parseInt(S.fng.value);
+  const cls = val > 60 ? 'up' : val < 40 ? 'down' : 'flat';
+  $('fng-num').textContent  = val;
+  $('fng-num').className    = cls;
+  $('fng-lbl').textContent  = S.fng.value_classification.toUpperCase();
+  $('fng-lbl').className    = cls;
+  $('fng-meta').textContent = `Updated: ${new Date(S.fng.timestamp * 1000).toLocaleDateString()}`;
+  $('fng-needle').style.left = val + '%';
+}
+
+/* ─── WebSocket — CoinCap ─── */
+const WS_COINS = [
+  'bitcoin','ethereum','solana','ripple','cardano','polkadot',
+  'chainlink','avalanche-2','polygon','litecoin','dogecoin','shiba-inu',
+];
+const WS_MAP = {
+  'bitcoin':'bitcoin','ethereum':'ethereum','solana':'solana','ripple':'ripple',
+  'cardano':'cardano','polkadot':'polkadot','chainlink':'chainlink',
+  'avalanche-2':'avalanche-2','polygon':'matic-network','litecoin':'litecoin',
+  'dogecoin':'dogecoin','shiba-inu':'shiba-inu',
+};
+
+function connectWS() {
+  const url = `${API.WS}?assets=${WS_COINS.join(',')}`;
+  try {
+    S.ws = new WebSocket(url);
+    S.ws.onopen    = () => setWS('live');
+    S.ws.onmessage = ({ data }) => {
+      try {
+        Object.entries(JSON.parse(data)).forEach(([ccId, raw]) => {
+          const cgId = WS_MAP[ccId];
+          const px   = parseFloat(raw);
+          if (!cgId || isNaN(px)) return;
+          patchCryptoPrice(cgId, px);
+        });
+      } catch (_) {}
+    };
+    S.ws.onclose = () => { setWS('rec'); setTimeout(connectWS, 5000); };
+    S.ws.onerror = () => setWS('off');
+  } catch (_) { setWS('off'); }
+}
+
+function patchCryptoPrice(cgId, newPx) {
+  const idx = S.crypto.findIndex(c => c.id === cgId);
+  if (idx === -1) return;
+  const prev = S.crypto[idx].current_price;
+  S.crypto[idx].current_price = newPx;
+
+  const cell = $(`cpx-${cgId}`);
+  const row  = $(`cr-${cgId}`);
+  if (cell) { cell.textContent = fmtPx(newPx); }
+  if (row)  {
+    const dir = newPx > prev ? 'fu' : 'fd';
+    row.classList.remove('fu','fd');
+    void row.offsetWidth;
+    row.classList.add(dir);
+  }
+
+  // Update ticker item if present
+  const ti = $(`ti-${cgId}`);
+  if (ti) ti.textContent = fmtPx(newPx).replace('$','');
+}
+
+/* ─── Ticker ─── */
+function buildTicker() {
+  const items = [];
+
+  S.crypto.slice(0, 12).forEach(c => {
+    const p   = c.price_change_percentage_24h || 0;
+    const arr = p > 0 ? '▲' : p < 0 ? '▼' : '●';
+    const cls = p > 0 ? 'up' : p < 0 ? 'down' : 'flat';
+    items.push(`<span class="ti">
+      <span class="ti-sym">${c.symbol.toUpperCase()}</span>
+      <span class="ti-px" id="ti-${c.id}">${fmtPx(c.current_price).replace('$','')}</span>
+      <span class="${cls}">${arr}${Math.abs(p).toFixed(2)}%</span>
+    </span>`);
+  });
+
+  FX_MAJOR.forEach(ccy => {
+    const r = S.forex[ccy]; if (!r) return;
+    const display = ccy === 'JPY' ? r.toFixed(2) : (1/r).toFixed(4);
+    items.push(`<span class="ti">
+      <span class="ti-sym">${ccy}/USD</span>
+      <span class="ti-px">${display}</span>
+    </span>`);
+  });
+
+  const track = $('ticker-track');
+  const html  = items.join('');
+  track.innerHTML = html + html;
+  track.style.animationDuration = Math.max(30, items.length * 3) + 's';
+}
+
+/* ─── Status ─── */
+function setWS(state) {
+  const el   = $('s-ws');
+  const map  = { live:['WS: LIVE ●','ws-live'], rec:['WS: RECONNECTING','ws-rec'], off:['WS: OFFLINE','ws-off'] };
+  const [t,c] = map[state] || map.off;
+  el.textContent = t; el.className = c;
+}
+
+function setStatus() {
+  const parts = [];
+  if (S.ok.cg  === true)  parts.push('CoinGecko ✓');
+  else if (S.ok.cg === false) parts.push('CoinGecko ✗');
+  if (S.ok.fx  === true)  parts.push('Frankfurter ✓');
+  else if (S.ok.fx === false) parts.push('Frankfurter ✗');
+  $('s-api').textContent = 'APIs: ' + (parts.join(' · ') || 'CONNECTING…');
+  $('s-upd').textContent = 'UPD: ' + new Date().toLocaleTimeString();
+}
+
+/* ─── Init ─── */
+async function init() {
+  tick();
+  setInterval(tick, 1000);
+
+  await Promise.allSettled([fetchCrypto(), fetchForex(), fetchFNG()]);
+
+  connectWS();
+
+  setInterval(fetchCrypto, REFRESH.CRYPTO);
+  setInterval(fetchForex,  REFRESH.FOREX);
+  setInterval(fetchFNG,    REFRESH.FNG);
+  setInterval(setStatus,   10_000);
+}
+
+document.readyState === 'loading'
+  ? document.addEventListener('DOMContentLoaded', init)
+  : init();
+</script>
+</body>
+</html>
