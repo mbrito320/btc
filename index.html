@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BLOOMBERG TERMINAL</title>
+  <link rel="stylesheet" href="terminal.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+  <!-- ═══ COMMAND BAR ═══ -->
+  <div id="command-bar">
+    <div id="logo">BLOOMBERG<span id="logo-sub">TERMINAL</span></div>
+    <div id="cmd-wrap">
+      <span class="prompt">▶</span>
+      <input type="text" id="cmd-input" placeholder="Enter security ticker, function or command (e.g. BTC, AAPL, EUR/USD, HELP)..." autocomplete="off" spellcheck="false" />
+    </div>
+    <div id="top-meta">
+      <div id="clock-display"></div>
+      <div id="mkt-status"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TICKER TAPE ═══ -->
+  <div id="ticker-wrapper">
+    <div id="ticker-label">LIVE</div>
+    <div id="ticker-scroll">
+      <div id="ticker-track"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB BAR ═══ -->
+  <div id="tab-bar">
+    <button class="tab active" data-tab="overview">⬛ OVERVIEW</button>
+    <button class="tab" data-tab="equities">📈 EQUITIES</button>
+    <button class="tab" data-tab="crypto">₿ CRYPTO</button>
+    <button class="tab" data-tab="forex">💱 FX / FOREX</button>
+    <button class="tab" data-tab="fixed">🏦 FIXED INCOME</button>
+    <button class="tab" data-tab="commodities">🛢 COMMODITIES</button>
+    <button class="tab" data-tab="alternatives">🏠 ALTERNATIVES</button>
+    <button class="tab" data-tab="economic">📊 MACRO / ECON</button>
+  </div>
+
+  <!-- ═══ MAIN LAYOUT ═══ -->
+  <div id="main-layout">
+
+    <!-- LEFT: Watchlist -->
+    <div id="left-panel">
+      <div class="panel-hdr">WATCHLIST <span class="pulse-dot">●</span></div>
+      <div id="watchlist-body"></div>
+    </div>
+
+    <!-- CENTER: Content Area -->
+    <div id="center-panel">
+
+      <!-- OVERVIEW TAB -->
+      <div class="tab-pane active" id="pane-overview">
+        <div class="overview-grid">
+
+          <div class="mkt-panel" id="panel-crypto">
+            <div class="panel-hdr">CRYPTOCURRENCY <span class="live-tag">● LIVE</span></div>
+            <table class="dt" id="tbl-crypto">
+              <thead><tr>
+                <th class="ta-l">#</th><th class="ta-l">NAME</th><th>PRICE</th>
+                <th>1H %</th><th>24H %</th><th>7D %</th><th>MKT CAP</th><th>VOL 24H</th>
+              </tr></thead>
+              <tbody><tr><td colspan="8" class="loading">⟳ Connecting to CoinGecko…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="mkt-panel" id="panel-fx">
+            <div class="panel-hdr">FOREX / FX RATES <span class="live-tag">● LIVE</span></div>
+            <table class="dt" id="tbl-fx">
+              <thead><tr>
+                <th class="ta-l">PAIR</th><th>RATE</th><th>BID</th><th>ASK</th><th>SPREAD</th><th>CHG%</th>
+              </tr></thead>
+              <tbody><tr><td colspan="6" class="loading">⟳ Connecting to Frankfurter…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="mkt-panel" id="panel-equities">
+            <div class="panel-hdr">EQUITIES — US MARKETS</div>
+            <table class="dt" id="tbl-equities">
+              <thead><tr>
+                <th class="ta-l">SYMBOL</th><th class="ta-l">NAME</th><th>PRICE</th><th>CHG</th><th>CHG%</th><th>VOLUME</th><th>P/E</th>
+              </tr></thead>
+              <tbody><tr><td colspan="7" class="loading">⟳ Loading equities…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="mkt-panel" id="panel-bonds">
+            <div class="panel-hdr">FIXED INCOME / YIELD CURVE</div>
+            <table class="dt" id="tbl-bonds">
+              <thead><tr>
+                <th class="ta-l">SECURITY</th><th>YIELD</th><th>PREV</th><th>CHG (bps)</th><th>TYPE</th>
+              </tr></thead>
+              <tbody><tr><td colspan="5" class="loading">⟳ Loading bonds…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="mkt-panel" id="panel-commodities">
+            <div class="panel-hdr">COMMODITIES</div>
+            <table class="dt" id="tbl-commodities">
+              <thead><tr>
+                <th class="ta-l">COMMODITY</th><th>PRICE</th><th>CHG</th><th>CHG%</th><th>UNIT</th><th>SECTOR</th>
+              </tr></thead>
+              <tbody><tr><td colspan="6" class="loading">⟳ Loading commodities…</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="mkt-panel" id="panel-alternatives">
+            <div class="panel-hdr">ALTERNATIVE ASSETS</div>
+            <table class="dt" id="tbl-alternatives">
+              <thead><tr>
+                <th class="ta-l">ASSET</th><th>TICKER</th><th>PRICE</th><th>CHG%</th><th>CATEGORY</th>
+              </tr></thead>
+              <tbody><tr><td colspan="5" class="loading">⟳ Loading alt assets…</td></tr></tbody>
+            </table>
+          </div>
+
+        </div>
+      </div><!-- /overview -->
+
+      <!-- DETAIL VIEW (chart + info, shown on asset click) -->
+      <div id="detail-view" class="hidden">
+        <div id="detail-hdr">
+          <button id="btn-back">← BACK</button>
+          <span id="det-symbol"></span>
+          <span id="det-name"></span>
+          <span id="det-price"></span>
+          <span id="det-chg"></span>
+          <div id="det-timeframes">
+            <button class="tf-btn active" data-days="1">1D</button>
+            <button class="tf-btn" data-days="7">1W</button>
+            <button class="tf-btn" data-days="30">1M</button>
+            <button class="tf-btn" data-days="90">3M</button>
+            <button class="tf-btn" data-days="365">1Y</button>
+          </div>
+        </div>
+        <div id="chart-wrap">
+          <canvas id="main-chart"></canvas>
+        </div>
+        <div id="detail-stats"></div>
+      </div>
+
+    </div><!-- /center -->
+
+    <!-- RIGHT: Intelligence Panel -->
+    <div id="right-panel">
+
+      <div class="panel-hdr">FEAR &amp; GREED <span class="live-tag">● LIVE</span></div>
+      <div id="fng-widget">
+        <div id="fng-arc-wrap">
+          <svg id="fng-arc" viewBox="0 0 120 70" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="fng-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#FF0000"/>
+                <stop offset="25%" style="stop-color:#FF6600"/>
+                <stop offset="50%" style="stop-color:#FFFF00"/>
+                <stop offset="75%" style="stop-color:#88FF00"/>
+                <stop offset="100%" style="stop-color:#00FF41"/>
+              </linearGradient>
+            </defs>
+            <path d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="#222" stroke-width="10"/>
+            <path id="fng-arc-fill" d="M 10 65 A 50 50 0 0 1 110 65" fill="none" stroke="url(#fng-grad)" stroke-width="10" stroke-dasharray="0 160"/>
+            <line id="fng-needle" x1="60" y1="65" x2="60" y2="20" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="60" cy="65" r="3" fill="white"/>
+          </svg>
+        </div>
+        <div id="fng-value">--</div>
+        <div id="fng-label">LOADING…</div>
+        <div id="fng-meta"></div>
+      </div>
+
+      <div class="panel-hdr" style="margin-top:6px">MACRO INDICATORS</div>
+      <div id="macro-panel"></div>
+
+      <div class="panel-hdr" style="margin-top:6px">TOP MOVERS (24H)</div>
+      <div id="movers-panel"></div>
+
+      <div class="panel-hdr" style="margin-top:6px">ECONOMIC CALENDAR</div>
+      <div id="econ-calendar"></div>
+
+    </div><!-- /right -->
+
+  </div><!-- /main-layout -->
+
+  <!-- ═══ STATUS BAR ═══ -->
+  <div id="status-bar">
+    <span id="api-indicators"></span>
+    <span id="last-upd"></span>
+    <span id="ws-indicator">WS: —</span>
+    <span id="data-sources">SOURCES: CoinGecko · Frankfurter · CoinCap · Alternative.me · Alpha Vantage</span>
+  </div>
+
+  <script src="terminal.js"></script>
+</body>
+</html>
