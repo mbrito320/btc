@@ -21,6 +21,18 @@ export interface Conversation {
   escalation_reason: string | null;
   assigned_agent: string | null;
   compliance_flags: string | null; // JSON array of flag strings
+  vulnerable_customer_flag: number; // 0 or 1 — FCA Consumer Duty / FG21/1
+  vulnerable_customer_type: string | null;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  event_type: string;
+  conversation_id: string | null;
+  actor: string;
+  description: string;
+  metadata: string; // JSON
+  created_at: string;
 }
 
 export interface ConversationWithTags extends Conversation {
@@ -74,6 +86,7 @@ export interface Metrics {
   avg_handle_time_minutes: number;
   active_escalations: number;
   compliance_flags_today: number;
+  vulnerable_customers_active: number;
   total_conversations: number;
   resolved_today: number;
   escalated_today: number;
