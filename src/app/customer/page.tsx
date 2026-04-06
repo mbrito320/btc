@@ -13,9 +13,21 @@ interface Message {
 
 type ConversationStatus = 'ai_handling' | 'escalated' | 'resolved' | 'closed';
 
+function escapeHtml(raw: string): string {
+  return raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function parseMarkdown(text: string): string {
   // Remove escalation/resolved signals from display
   text = text.replace(/\[ESCALATE:[^\]]+\]/g, '').replace(/\[RESOLVED:[^\]]+\]/g, '').trim();
+
+  // Escape raw HTML before processing markdown to prevent XSS
+  text = escapeHtml(text);
 
   // Bold
   text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -92,7 +104,7 @@ export default function CustomerPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [status, setStatus] = useState<ConversationStatus>('ai_handling');
   const [streamingContent, setStreamingContent] = useState('');
-  const [customerName] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -305,9 +317,23 @@ export default function CustomerPage() {
                 <Shield className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-slate-800 mb-3">Welcome to Nexus Financial</h2>
-              <p className="text-slate-500 max-w-sm mb-8 leading-relaxed">
+              <p className="text-slate-500 max-w-sm mb-6 leading-relaxed">
                 I'm ARIA, your AI banking assistant. I can help with account balances, transactions, card services, and more — securely and instantly.
               </p>
+
+              <div className="w-full max-w-md mb-6">
+                <label className="block text-sm font-medium text-slate-700 mb-1.5 text-left">
+                  Your first name <span className="text-slate-400 font-normal">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value.slice(0, 50))}
+                  placeholder="e.g. Sarah"
+                  maxLength={50}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent placeholder-slate-400"
+                />
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md">
                 {quickActions.map((action) => (
@@ -335,7 +361,7 @@ export default function CustomerPage() {
                           body: JSON.stringify({
                             conversation_id: conversationId,
                             message: action,
-                            customer_name: 'Customer',
+                            customer_name: customerName || 'Customer',
                           }),
                         }).then(async (response) => {
                           const reader = response.body?.getReader();
@@ -386,11 +412,11 @@ export default function CustomerPage() {
               </div>
 
               <div className="mt-8 flex items-center gap-4 text-xs text-slate-400">
-                <span className="flex items-center gap-1.5"><Lock className="w-3 h-3" /> End-to-end encrypted</span>
+                <span className="flex items-center gap-1.5"><Lock className="w-3 h-3" /> 256-bit SSL</span>
                 <span>•</span>
                 <span className="flex items-center gap-1.5"><Shield className="w-3 h-3" /> FDIC Insured</span>
                 <span>•</span>
-                <span>Avg response: &lt;3 seconds</span>
+                <span>Never share your full SSN, PIN, or one-time passcode</span>
               </div>
             </div>
           )}

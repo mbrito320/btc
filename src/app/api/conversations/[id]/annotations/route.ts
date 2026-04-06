@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, logAudit } from '@/lib/db';
 import { CreateAnnotationRequest } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -32,6 +32,11 @@ export async function POST(
     `).run(annotationId, id, content, annotation_type, created_by, now);
 
     db.prepare('UPDATE conversations SET updated_at = ? WHERE id = ?').run(now, id);
+
+    logAudit('ANNOTATION_CREATED', id, created_by,
+      `Annotation added (type: ${annotation_type}): ${content.substring(0, 100)}${content.length > 100 ? '…' : ''}`,
+      { annotation_type, annotation_id: annotationId }
+    );
 
     const annotation = db.prepare('SELECT * FROM annotations WHERE id = ?').get(annotationId);
     return NextResponse.json(annotation, { status: 201 });

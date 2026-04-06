@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
-import { getDb } from '@/lib/db';
+import { getDb, logAudit } from '@/lib/db';
 import { NEXUS_SYSTEM_PROMPT } from '@/lib/system-prompt';
 import { ChatRequest, Message } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -50,6 +50,21 @@ export async function POST(request: NextRequest) {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    // Block AI processing if conversation is already escalated or resolved
+    if (conversation.status === 'escalated' || conversation.status === 'resolved' || conversation.status === 'closed') {
+      return new Response(
+        `data: ${JSON.stringify({ type: 'blocked', status: conversation.status, message: 'This conversation has been transferred to a human agent and cannot accept further AI messages.' })}\n\ndata: ${JSON.stringify({ type: 'done' })}\n\n`,
+        {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
     }
 
     // Save user message
@@ -152,6 +167,11 @@ export async function POST(request: NextRequest) {
               `SYSTEM AUTO-FLAG: FCA Consumer Duty Vulnerable Customer Protocol triggered.\n\nType: ${vcType}\n\nThis conversation must NOT be returned to AI handling. Specialist team review and supervisor sign-off required before closure.\n\nCompliance reference: FCA Consumer Duty (2023) PS22/9, FG21/1`,
               'compliance', 'SYSTEM', new Date().toISOString()
             );
+
+            logAudit('VULNERABLE_CUSTOMER_DETECTED', conversation_id, 'AI_SYSTEM',
+              `FCA Vulnerable Customer Protocol triggered. Category: ${vcType}`,
+              { vulnerable_type: vcType, fca_ref: 'FG21/1 / PS22/9' }
+            );
           }
 
           if (escalateMatch) {
@@ -162,6 +182,11 @@ export async function POST(request: NextRequest) {
               UPDATE conversations SET status = 'escalated', escalation_reason = ?, priority = ?, updated_at = ?
               WHERE id = ?
             `).run(reason, priority, new Date().toISOString(), conversation_id);
+
+            logAudit('ESCALATION', conversation_id, 'AI_SYSTEM',
+              `Conversation escalated by AI. Reason: ${reason}`,
+              { reason, priority, vulnerable_customer: isVulnerableCustomer }
+            );
 
             // Add system message about escalation
             db.prepare('INSERT INTO messages (id, conversation_id, role, content, created_at, metadata) VALUES (?, ?, ?, ?, ?, ?)').run(
@@ -182,6 +207,11 @@ export async function POST(request: NextRequest) {
               WHERE id = ?
             `).run(summary, new Date().toISOString(), conversation_id);
 
+            logAudit('CONVERSATION_RESOLVED', conversation_id, 'AI_SYSTEM',
+              `Conversation resolved by AI. Summary: ${summary.substring(0, 200)}`,
+              { summary }
+            );
+
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'resolved', summary })}\n\n`));
           } else {
             // Update last activity
@@ -197,6 +227,13 @@ export async function POST(request: NextRequest) {
             const existing = existingConv?.compliance_flags ? JSON.parse(existingConv.compliance_flags) : [];
             const merged = [...existing, ...complianceFlags];
             db.prepare('UPDATE conversations SET compliance_flags = ? WHERE id = ?').run(JSON.stringify(merged), conversation_id);
+
+            for (const flag of complianceFlags) {
+              logAudit('COMPLIANCE_FLAG', conversation_id, 'AI_SYSTEM',
+                `Compliance flag detected: ${flag.type} — ${flag.description}`,
+                { flag_type: flag.type, severity: flag.severity }
+              );
+            }
 
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'compliance_flags', flags: complianceFlags })}\n\n`));
           }

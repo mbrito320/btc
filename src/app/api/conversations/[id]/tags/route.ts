@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, logAudit } from '@/lib/db';
 import { AddTagRequest } from '@/lib/types';
 
 export async function POST(
@@ -41,6 +41,12 @@ export async function POST(
 
     // Update conversation updated_at
     db.prepare('UPDATE conversations SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), id);
+
+    const tagRecord = db.prepare('SELECT name FROM tags WHERE id = ?').get(tag_id) as { name: string } | null;
+    logAudit('TAG_ADDED', id, added_by,
+      `Tag added: ${tagRecord?.name ?? tag_id}`,
+      { tag_id }
+    );
 
     return NextResponse.json({ success: true, conversation_id: id, tag_id }, { status: 201 });
   } catch (error) {

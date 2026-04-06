@@ -139,9 +139,9 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-6 py-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { icon: <Lock className="w-5 h-5" />, label: 'Bank-Grade Security', value: 'SOC 2 Type II' },
-              { icon: <Zap className="w-5 h-5" />, label: 'AI Resolution Rate', value: '~73% avg' },
-              { icon: <TrendingUp className="w-5 h-5" />, label: 'Handle Time Reduction', value: '45% faster' },
+              { icon: <Lock className="w-5 h-5" />, label: 'Security', value: 'TLS Encrypted' },
+              { icon: <Zap className="w-5 h-5" />, label: 'AI Resolution Rate', value: 'Measured per pilot' },
+              { icon: <TrendingUp className="w-5 h-5" />, label: 'Handle Time', value: 'Tracked per deployment' },
               { icon: <Shield className="w-5 h-5" />, label: 'Compliance Flags', value: 'Real-time' },
             ].map(stat => (
               <div key={stat.label} className="text-center">
@@ -158,7 +158,7 @@ export default function HomePage() {
       <footer className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="text-sm text-slate-600">
-            © 2024 Nexus Financial Bank. All rights reserved. FDIC Insured.
+            © {new Date().getFullYear()} Nexus Financial Bank. All rights reserved. FDIC Insured.
           </div>
           <div className="flex items-center gap-4 text-xs text-slate-600">
             <span>Privacy Policy</span>

@@ -41,14 +41,26 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function escapeHtml(raw: string): string {
+  return raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderContent(text: string): string {
-  return text
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+  // Strip signals first, then escape HTML to prevent XSS, then apply safe markdown
+  text = text
     .replace(/\[ESCALATE:[^\]]*\]/gi, '')
     .replace(/\[RESOLVED:[^\]]*\]/gi, '')
     .replace(/\[COMPLIANCE:[^\]]*\]/gi, '')
-    .replace(/\n/g, '<br/>')
     .trim();
+  text = escapeHtml(text);
+  return text
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br/>');
 }
 
 export default function ConversationDetailPage() {
@@ -148,6 +160,15 @@ export default function ConversationDetailPage() {
   };
 
   const resolve = async () => {
+    if (conv?.vulnerable_customer_flag === 1) {
+      const confirmed = window.confirm(
+        '⚠ VULNERABLE CUSTOMER PROTOCOL ACTIVE\n\nThis case requires supervisor sign-off before closure (FCA Consumer Duty 2023 / FG21/1).\n\nConfirm that:\n• LPA/POA status has been verified\n• Vulnerability Assessment Form has been completed\n• Supervisor has reviewed and approved closure\n\nClick OK only if all requirements are met.'
+      );
+      if (!confirmed) return;
+    } else {
+      const confirmed = window.confirm('Mark this conversation as resolved?');
+      if (!confirmed) return;
+    }
     await fetch(`/api/conversations/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

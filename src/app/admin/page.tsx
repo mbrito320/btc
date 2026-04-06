@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { Metrics, Tag as TagType, AuditLogEntry } from '@/lib/types';
 
+const VOICE_CHANNEL_ENABLED = false; // Set to true when NVIDIA PersonaPlex integration is ready
+
 const TAG_CATEGORIES = ['transaction_type', 'issue_type', 'product', 'regulatory', 'custom'] as const;
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -141,7 +143,7 @@ export default function AdminPage() {
 
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4 flex gap-1 pb-0">
-          {(['overview', 'tags', 'audit', 'voice'] as const).map(tab => (
+          {(['overview', 'tags', 'audit', ...(VOICE_CHANNEL_ENABLED ? ['voice'] : [])] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
