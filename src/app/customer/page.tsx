@@ -97,7 +97,16 @@ function TypingIndicator() {
 }
 
 export default function CustomerPage() {
-  const [conversationId] = useState(() => uuidv4());
+  // Restore conversation from sessionStorage so refresh doesn't reset state
+  const [conversationId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('nexus_conv_id');
+      if (saved) return saved;
+    }
+    const id = uuidv4();
+    if (typeof window !== 'undefined') sessionStorage.setItem('nexus_conv_id', id);
+    return id;
+  });
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -108,6 +117,7 @@ export default function CustomerPage() {
   const [showWelcome, setShowWelcome] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const knownMessageIds = useRef<Set<string>>(new Set());
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,6 +126,48 @@ export default function CustomerPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, streamingContent, scrollToBottom]);
+
+  // On mount: restore prior conversation state from server
+  useEffect(() => {
+    const savedId = sessionStorage.getItem('nexus_conv_id');
+    if (!savedId) return;
+    fetch(`/api/conversations/${savedId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(conv => {
+        if (!conv) return;
+        if (conv.status === 'escalated' || conv.status === 'resolved' || conv.status === 'closed') {
+          setStatus(conv.status as ConversationStatus);
+          setShowWelcome(false);
+        }
+        return fetch(`/api/conversations/${savedId}/messages`);
+      })
+      .then(r => r?.ok ? r.json() : null)
+      .then((msgs: Message[] | null) => {
+        if (!msgs || msgs.length === 0) return;
+        msgs.forEach(m => knownMessageIds.current.add(m.id));
+        setMessages(msgs.filter(m => m.role !== 'system'));
+        setShowWelcome(false);
+      })
+      .catch(() => { /* silent — new session */ });
+  }, [conversationId]);
+
+  // Poll for agent messages when escalated
+  useEffect(() => {
+    if (status !== 'escalated') return;
+    const poll = setInterval(async () => {
+      try {
+        const r = await fetch(`/api/conversations/${conversationId}/messages`);
+        if (!r.ok) return;
+        const msgs: Message[] = await r.json();
+        const newMsgs = msgs.filter(m => m.role === 'agent' && !knownMessageIds.current.has(m.id));
+        if (newMsgs.length > 0) {
+          newMsgs.forEach(m => knownMessageIds.current.add(m.id));
+          setMessages(prev => [...prev, ...newMsgs]);
+        }
+      } catch { /* silent */ }
+    }, 4000);
+    return () => clearInterval(poll);
+  }, [status, conversationId]);
 
   const handleSend = async () => {
     const text = input.trim();

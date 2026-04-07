@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { getDb, logAudit } from '@/lib/db';
 import { UpdateConversationRequest } from '@/lib/types';
 
 export async function GET(
@@ -92,6 +92,13 @@ export async function PATCH(
     values.push(id);
 
     db.prepare(`UPDATE conversations SET ${updates.join(', ')} WHERE id = ?`).run(...values);
+
+    if (body.status === 'resolved') {
+      logAudit('CONVERSATION_RESOLVED', id, 'AGENT',
+        'Conversation marked resolved by agent.',
+        { previous_status: (conversation as Record<string, unknown>).status }
+      );
+    }
 
     const updated = db.prepare('SELECT * FROM conversations WHERE id = ?').get(id) as Record<string, unknown>;
     return NextResponse.json({

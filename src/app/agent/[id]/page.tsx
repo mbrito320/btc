@@ -84,6 +84,10 @@ export default function ConversationDetailPage() {
   const [showTagPicker, setShowTagPicker] = useState(false);
   const [tagSearch, setTagSearch] = useState('');
 
+  // Agent reply
+  const [agentReply, setAgentReply] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
+
   const fetchAll = useCallback(async () => {
     try {
       const [convRes, msgRes, annRes, tagsRes] = await Promise.all([
@@ -157,6 +161,23 @@ export default function ConversationDetailPage() {
       body: JSON.stringify({ reason }),
     });
     fetchAll();
+  };
+
+  const sendAgentReply = async () => {
+    const text = agentReply.trim();
+    if (!text || sendingReply) return;
+    setSendingReply(true);
+    try {
+      await fetch(`/api/conversations/${id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text, agent_name: 'Agent' }),
+      });
+      setAgentReply('');
+      await fetchAll();
+    } finally {
+      setSendingReply(false);
+    }
   };
 
   const resolve = async () => {
@@ -345,6 +366,32 @@ export default function ConversationDetailPage() {
             })}
             <div ref={bottomRef} />
           </div>
+
+          {/* Agent reply compose — available when escalated */}
+          {(conv.status === 'escalated' || conv.status === 'ai_handling') && conv.status !== 'resolved' && conv.status !== 'closed' && (
+            <div className="border-t border-slate-200 bg-white px-4 py-3">
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <textarea
+                    value={agentReply}
+                    onChange={e => setAgentReply(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentReply(); } }}
+                    placeholder="Reply to customer… (Enter to send, Shift+Enter for new line)"
+                    rows={2}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-slate-800 placeholder-slate-400"
+                  />
+                </div>
+                <button
+                  onClick={sendAgentReply}
+                  disabled={!agentReply.trim() || sendingReply}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors shrink-0"
+                >
+                  <Send className="w-4 h-4" />
+                  {sendingReply ? 'Sending…' : 'Send'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Panel */}

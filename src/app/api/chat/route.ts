@@ -9,6 +9,20 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Simple in-memory rate limiter: max 10 messages per conversation per minute
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function checkRateLimit(conversationId: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(conversationId);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(conversationId, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+  if (entry.count >= 10) return false;
+  entry.count++;
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body: ChatRequest = await request.json();
@@ -17,6 +31,13 @@ export async function POST(request: NextRequest) {
     if (!conversation_id || !message) {
       return new Response(JSON.stringify({ error: 'conversation_id and message are required' }), {
         status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!checkRateLimit(conversation_id)) {
+      return new Response(JSON.stringify({ error: 'Rate limit exceeded. Please wait a moment before sending another message.' }), {
+        status: 429,
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -138,6 +159,7 @@ export async function POST(request: NextRequest) {
             { pattern: /\[COMPLIANCE:CFPB\]/i, type: 'CFPB', description: 'Customer indicated regulatory complaint intent', severity: 'medium' },
             { pattern: /\[COMPLIANCE:SCRA\]/i, type: 'SCRA', description: 'Active military service member - SCRA benefits review required', severity: 'medium' },
             { pattern: /\[COMPLIANCE:BSA_AML\]/i, type: 'BSA_AML', description: 'Potential BSA/AML structuring concern', severity: 'high' },
+            { pattern: /\[COMPLIANCE:FAIR_LENDING\]/i, type: 'FAIR_LENDING', description: 'Potential ECOA/Fair Lending concern detected', severity: 'high' },
           ];
 
           for (const cp of compliancePatterns) {
