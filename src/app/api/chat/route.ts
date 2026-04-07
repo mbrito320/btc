@@ -112,9 +112,11 @@ export async function POST(request: NextRequest) {
 
     // Create SSE stream
     const encoder = new TextEncoder();
+    const requestStart = Date.now();
     const stream = new ReadableStream({
       async start(controller) {
         let fullContent = '';
+        let firstTokenMs: number | null = null;
 
         try {
           const streamResponse = await anthropic.messages.stream({
@@ -130,17 +132,19 @@ export async function POST(request: NextRequest) {
           for await (const event of streamResponse) {
             if (event.type === 'content_block_delta') {
               if (event.delta.type === 'text_delta') {
+                if (firstTokenMs === null) firstTokenMs = Date.now() - requestStart;
                 fullContent += event.delta.text;
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'text', content: event.delta.text })}\n\n`));
               }
             }
           }
+          const totalMs = Date.now() - requestStart;
 
           // Process the complete response for escalation/resolution signals
           const escalateMatch = fullContent.match(/\[ESCALATE:\s*([^\]]+)\]/);
           const resolvedMatch = fullContent.match(/\[RESOLVED:\s*([^\]]+)\]/);
 
-          // Save assistant message
+          // Save assistant message with latency metadata
           const asstMsgId = uuidv4();
           db.prepare('INSERT INTO messages (id, conversation_id, role, content, created_at, metadata) VALUES (?, ?, ?, ?, ?, ?)').run(
             asstMsgId,
@@ -148,7 +152,7 @@ export async function POST(request: NextRequest) {
             'assistant',
             fullContent,
             new Date().toISOString(),
-            null
+            JSON.stringify({ latency_first_token_ms: firstTokenMs, latency_total_ms: totalMs })
           );
 
           // Process compliance flags

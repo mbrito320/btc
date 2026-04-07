@@ -66,6 +66,8 @@ export default function AdminPage() {
   const [newTagCategory, setNewTagCategory] = useState<typeof TAG_CATEGORIES[number]>('custom');
   const [savingTag, setSavingTag] = useState(false);
   const [tagError, setTagError] = useState('');
+  const [deletingTagId, setDeletingTagId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   const fetchData = useCallback(async () => {
     try {
@@ -88,6 +90,29 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Auto-refresh every 30 seconds so ops managers see live data without manual refresh
+  useEffect(() => {
+    const t = setInterval(fetchData, 30_000);
+    return () => clearInterval(t);
+  }, [fetchData]);
+
+  const deleteTag = async (id: string, name: string) => {
+    if (!window.confirm(`Delete tag "${name}"? This will remove it from all conversations.`)) return;
+    setDeletingTagId(id);
+    setDeleteError('');
+    try {
+      const res = await fetch(`/api/tags/${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const err = await res.json();
+        setDeleteError(err.error || 'Failed to delete tag');
+        return;
+      }
+      await fetchData();
+    } finally {
+      setDeletingTagId(null);
+    }
+  };
 
   const createTag = async () => {
     if (!newTagName.trim()) { setTagError('Tag name is required'); return; }
@@ -338,6 +363,7 @@ export default function AdminPage() {
                 </button>
               </div>
               {tagError && <div className="text-xs text-red-600 mt-2">{tagError}</div>}
+              {deleteError && <div className="text-xs text-red-600 mt-2">{deleteError}</div>}
             </div>
 
             {/* Tag list by category */}
@@ -361,6 +387,7 @@ export default function AdminPage() {
                         <th className="text-left px-5 py-2.5 font-medium">Tag</th>
                         <th className="text-left px-5 py-2.5 font-medium">Used</th>
                         <th className="text-left px-5 py-2.5 font-medium">Added by</th>
+                        <th className="px-5 py-2.5" />
                       </tr>
                     </thead>
                     <tbody>
@@ -374,6 +401,18 @@ export default function AdminPage() {
                           </td>
                           <td className="px-5 py-2.5 text-slate-500 text-xs">{tag.usage_count || 0}×</td>
                           <td className="px-5 py-2.5 text-slate-400 text-xs">System / Agent</td>
+                          <td className="px-5 py-2.5 text-right">
+                            {tag.category !== 'regulatory' && (
+                              <button
+                                onClick={() => deleteTag(tag.id, tag.name)}
+                                disabled={deletingTagId === tag.id}
+                                title="Delete tag"
+                                className="p-1 rounded text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
