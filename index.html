@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alpha Mario — OSINT Intelligence Platform</title>
+  <meta name="description" content="Alpha Mario OSINT Platform — Real-time open-source intelligence terminal. Monitor global signals, analyze threat vectors, and correlate multi-source data.">
+  <meta name="theme-color" content="#0a0e17">
+  <meta property="og:title" content="Alpha Mario — OSINT Intelligence Platform">
+  <meta property="og:description" content="Real-time open-source intelligence terminal for global signal monitoring and threat analysis.">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- Scan Lines Overlay -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- Navigation -->
+  <nav class="nav" id="nav">
+    <div class="nav__brand">
+      <span class="nav__logo" aria-label="Alpha Mario Logo">&#9670;</span>
+      <span class="nav__name">ALPHA MARIO</span>
+      <span class="nav__tag">OSINT TERMINAL</span>
+    </div>
+    <div class="nav__links">
+      <a href="#globe" class="nav__link nav__link--active" data-section="globe">Globe</a>
+      <a href="#signals" class="nav__link" data-section="signals">Signals</a>
+      <a href="#modules" class="nav__link" data-section="modules">Modules</a>
+      <a href="#guide" class="nav__link" data-section="guide">Signal Guide</a>
+      <a href="#about" class="nav__link" data-section="about">About</a>
+    </div>
+    <div class="nav__status">
+      <span class="nav__indicator"></span>
+      <span class="nav__status-text">SYSTEM ONLINE</span>
+    </div>
+    <button class="nav__toggle" id="navToggle" aria-label="Toggle navigation">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#globe" class="mobile-menu__link" data-section="globe">Globe View</a>
+    <a href="#signals" class="mobile-menu__link" data-section="signals">Live Signals</a>
+    <a href="#modules" class="mobile-menu__link" data-section="modules">Modules</a>
+    <a href="#guide" class="mobile-menu__link" data-section="guide">Signal Guide</a>
+    <a href="#about" class="mobile-menu__link" data-section="about">About</a>
+  </div>
+
+  <!-- Hero / Globe Section -->
+  <section class="hero" id="globe">
+    <div class="hero__hud">
+      <div class="hero__hud-corner hero__hud-corner--tl"></div>
+      <div class="hero__hud-corner hero__hud-corner--tr"></div>
+      <div class="hero__hud-corner hero__hud-corner--bl"></div>
+      <div class="hero__hud-corner hero__hud-corner--br"></div>
+    </div>
+    <div class="hero__globe-container" id="globeContainer">
+      <div class="hero__globe-hint">SCROLL TO ZOOM &middot; DRAG TO PAN</div>
+      <div class="hero__globe-controls">
+        <button class="globe-ctrl" id="zoomIn" aria-label="Zoom in">+</button>
+        <button class="globe-ctrl" id="zoomOut" aria-label="Zoom out">&minus;</button>
+        <button class="globe-ctrl" id="resetView" aria-label="Reset view">&#8634;</button>
+      </div>
+    </div>
+    <div class="hero__overlay">
+      <h1 class="hero__title glitch" data-text="ALPHA MARIO">ALPHA MARIO</h1>
+      <p class="hero__subtitle">OPEN-SOURCE INTELLIGENCE PLATFORM</p>
+      <div class="hero__stats" id="heroStats">
+        <div class="stat">
+          <span class="stat__value" data-counter="14892">0</span>
+          <span class="stat__label">SIGNALS TRACKED</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value" data-counter="193">0</span>
+          <span class="stat__label">COUNTRIES</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value" data-counter="47">0</span>
+          <span class="stat__label">DATA LAYERS</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value stat__value--live">LIVE</span>
+          <span class="stat__label">STATUS</span>
+        </div>
+      </div>
+      <a href="#signals" class="hero__cta">
+        <span>ACCESS TERMINAL</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8l5 5 5-5" stroke="currentColor" stroke-width="1.5"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- Live Signals Feed -->
+  <section class="section signals" id="signals">
+    <div class="section__header">
+      <span class="section__tag">// LIVE FEED</span>
+      <h2 class="section__title">Signal Intelligence</h2>
+      <p class="section__desc">Real-time aggregation of open-source intelligence signals across global networks. Each entry is cross-referenced against multiple verification layers.</p>
+    </div>
+    <div class="signals__feed" id="signalFeed">
+      <!-- Populated by JS -->
+    </div>
+    <div class="signals__toolbar">
+      <div class="signals__filters">
+        <button class="filter-btn filter-btn--active" data-filter="all">ALL</button>
+        <button class="filter-btn" data-filter="cyber">CYBER</button>
+        <button class="filter-btn" data-filter="geoint">GEOINT</button>
+        <button class="filter-btn" data-filter="sigint">SIGINT</button>
+        <button class="filter-btn" data-filter="humint">HUMINT</button>
+        <button class="filter-btn" data-filter="finint">FININT</button>
+      </div>
+      <span class="signals__count" id="signalCount">0 signals</span>
+    </div>
+  </section>
+
+  <!-- Modules Grid -->
+  <section class="section modules" id="modules">
+    <div class="section__header">
+      <span class="section__tag">// CAPABILITIES</span>
+      <h2 class="section__title">Intelligence Modules</h2>
+      <p class="section__desc">Specialized analysis tools for distinct intelligence domains. Each module operates independently while contributing to the unified threat picture.</p>
+    </div>
+    <div class="modules__grid">
+      <div class="module-card" data-module="geoint">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10A15.3 15.3 0 0 1 12 2z"/></svg>
+        </div>
+        <h3 class="module-card__title">GEOINT</h3>
+        <p class="module-card__subtitle">Geospatial Intelligence</p>
+        <p class="module-card__desc">Satellite imagery analysis, terrain mapping, and spatial pattern recognition across conflict zones and strategic regions.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--active"></span>
+          OPERATIONAL
+        </div>
+      </div>
+
+      <div class="module-card" data-module="sigint">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12h2m16 0h2M6.34 6.34l1.42 1.42m8.48 8.48l1.42 1.42M12 2v2m0 16v2M6.34 17.66l1.42-1.42m8.48-8.48l1.42-1.42"/><circle cx="12" cy="12" r="4"/></svg>
+        </div>
+        <h3 class="module-card__title">SIGINT</h3>
+        <p class="module-card__subtitle">Signals Intelligence</p>
+        <p class="module-card__desc">Radio frequency monitoring, communications metadata analysis, and electromagnetic spectrum surveillance across monitored bands.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--active"></span>
+          OPERATIONAL
+        </div>
+      </div>
+
+      <div class="module-card" data-module="cyber">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4M7 8l3 3-3 3m5 0h3"/></svg>
+        </div>
+        <h3 class="module-card__title">CYBER</h3>
+        <p class="module-card__subtitle">Cyber Threat Intelligence</p>
+        <p class="module-card__desc">Network intrusion detection, malware signature tracking, dark web monitoring, and advanced persistent threat profiling.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--active"></span>
+          OPERATIONAL
+        </div>
+      </div>
+
+      <div class="module-card" data-module="humint">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="module-card__title">HUMINT</h3>
+        <p class="module-card__subtitle">Human Intelligence</p>
+        <p class="module-card__desc">Social network analysis, public records correlation, identity resolution, and behavioral pattern detection from open sources.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--warning"></span>
+          LIMITED
+        </div>
+      </div>
+
+      <div class="module-card" data-module="finint">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3 class="module-card__title">FININT</h3>
+        <p class="module-card__subtitle">Financial Intelligence</p>
+        <p class="module-card__desc">Cryptocurrency flow tracing, sanctions screening, transaction pattern analysis, and financial network mapping for illicit activity detection.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--active"></span>
+          OPERATIONAL
+        </div>
+      </div>
+
+      <div class="module-card" data-module="osint">
+        <div class="module-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg>
+        </div>
+        <h3 class="module-card__title">OSINT</h3>
+        <p class="module-card__subtitle">Open Source Intelligence</p>
+        <p class="module-card__desc">Automated collection and analysis of publicly available data, media monitoring, social listening, and open-source data fusion.</p>
+        <div class="module-card__status">
+          <span class="module-card__indicator module-card__indicator--active"></span>
+          OPERATIONAL
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Signal Guide -->
+  <section class="section guide" id="guide">
+    <div class="section__header">
+      <span class="section__tag">// METHODOLOGY</span>
+      <h2 class="section__title">Signal Guide</h2>
+      <p class="section__desc">Understanding the intelligence indicators presented across the platform. These are interpretation guides, not conclusions.</p>
+    </div>
+    <div class="guide__content">
+      <div class="guide__warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="24" height="24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+        <div>
+          <strong>ANALYTICAL NOTICE</strong>
+          <p>Signals are interpretation guides, not conclusions. Avoid drawing strong judgments from isolated data points. Always seek corroboration across multiple data layers before forming assessments.</p>
+        </div>
+      </div>
+      <div class="guide__grid">
+        <div class="guide__item">
+          <div class="guide__level guide__level--critical">CRITICAL</div>
+          <p>Confirmed high-impact activity requiring immediate attention. Verified by 3+ independent sources with high confidence.</p>
+        </div>
+        <div class="guide__item">
+          <div class="guide__level guide__level--high">HIGH</div>
+          <p>Strong indicators of significant activity. Corroborated by at least 2 independent sources. Warrants elevated monitoring.</p>
+        </div>
+        <div class="guide__item">
+          <div class="guide__level guide__level--moderate">MODERATE</div>
+          <p>Notable patterns detected from single-source reporting. Requires additional corroboration before actionable assessment.</p>
+        </div>
+        <div class="guide__item">
+          <div class="guide__level guide__level--low">LOW</div>
+          <p>Ambient noise or routine activity. Monitored for trend analysis. May become significant when aggregated over time.</p>
+        </div>
+        <div class="guide__item">
+          <div class="guide__level guide__level--info">INFO</div>
+          <p>Contextual data for situational awareness. No immediate action required. Background reference material for analysts.</p>
+        </div>
+      </div>
+      <div class="guide__principles">
+        <h3>Core Principles</h3>
+        <ul>
+          <li><span>01</span> No single signal constitutes actionable intelligence in isolation</li>
+          <li><span>02</span> Confidence increases with independent source corroboration</li>
+          <li><span>03</span> Context determines significance — identical signals carry different weight in different environments</li>
+          <li><span>04</span> Absence of evidence is not evidence of absence</li>
+          <li><span>05</span> All assessments carry inherent uncertainty — communicate confidence levels explicitly</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- About -->
+  <section class="section about" id="about">
+    <div class="section__header">
+      <span class="section__tag">// PLATFORM</span>
+      <h2 class="section__title">About Alpha Mario</h2>
+    </div>
+    <div class="about__content">
+      <div class="about__text">
+        <p>Alpha Mario is an open-source intelligence platform designed for analysts, researchers, and security professionals. We aggregate, process, and visualize publicly available data to provide actionable situational awareness across geopolitical, cyber, and financial domains.</p>
+        <p>Our platform combines automated collection pipelines with human analytical frameworks, ensuring that raw data is transformed into meaningful intelligence products while maintaining strict analytical rigor.</p>
+        <div class="about__features">
+          <div class="about__feature">
+            <span class="about__feature-num">01</span>
+            <div>
+              <strong>Multi-Source Fusion</strong>
+              <p>Aggregate signals from satellite, cyber, financial, and human sources into a unified operational picture.</p>
+            </div>
+          </div>
+          <div class="about__feature">
+            <span class="about__feature-num">02</span>
+            <div>
+              <strong>Real-Time Processing</strong>
+              <p>Sub-second ingestion pipeline processing thousands of data points per minute with automatic deduplication.</p>
+            </div>
+          </div>
+          <div class="about__feature">
+            <span class="about__feature-num">03</span>
+            <div>
+              <strong>Analytical Rigor</strong>
+              <p>Built-in structured analytical techniques including ACH, SWOT matrices, and confidence calibration tools.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="about__terminal">
+        <div class="terminal">
+          <div class="terminal__bar">
+            <span class="terminal__dot terminal__dot--red"></span>
+            <span class="terminal__dot terminal__dot--yellow"></span>
+            <span class="terminal__dot terminal__dot--green"></span>
+            <span class="terminal__title">alpha-mario-terminal</span>
+          </div>
+          <div class="terminal__body" id="terminalBody">
+            <div class="terminal__line"><span class="terminal__prompt">$</span> alpha-mario --status</div>
+            <div class="terminal__output">
+              <br>  ╔══════════════════════════════════════╗
+              <br>  ║  ALPHA MARIO OSINT PLATFORM v3.2.1   ║
+              <br>  ║  Status: OPERATIONAL                 ║
+              <br>  ║  Uptime: 99.97%                      ║
+              <br>  ║  Nodes:  47 active                   ║
+              <br>  ║  Last sync: 2 seconds ago            ║
+              <br>  ╚══════════════════════════════════════╝
+            </div>
+            <div class="terminal__line"><span class="terminal__prompt">$</span> <span class="terminal__cursor">_</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer__inner">
+      <div class="footer__brand">
+        <span class="nav__logo">&#9670;</span>
+        <span>ALPHA MARIO</span>
+      </div>
+      <div class="footer__links">
+        <a href="#globe">Globe</a>
+        <a href="#signals">Signals</a>
+        <a href="#modules">Modules</a>
+        <a href="#guide">Guide</a>
+        <a href="#about">About</a>
+      </div>
+      <div class="footer__meta">
+        <p>CLASSIFICATION: UNCLASSIFIED // OPEN SOURCE</p>
+        <p>&copy; 2026 Alpha Mario Intelligence Platform. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/globe.gl@2.31.0/dist/globe.gl.min.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

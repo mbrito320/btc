@@ -1,0 +1,16 @@
+{
+  "name": "Alpha Mario OSINT Platform",
+  "short_name": "Alpha Mario",
+  "description": "Open-source intelligence terminal for global signal monitoring and threat analysis.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e17",
+  "theme_color": "#0a0e17",
+  "icons": [
+    {
+      "src": "/assets/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
